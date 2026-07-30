@@ -77,7 +77,7 @@ class TgCall(PyTgCalls):
             await client.play(
                 chat_id=chat_id,
                 stream=stream,
-                config=types.GroupCallConfig(auto_start=True),
+                config=types.GroupCallConfig(auto_start=False),
             )
             if not seek_time:
                 media.time = 1
