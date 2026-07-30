@@ -48,7 +48,9 @@ class YouTube:
                 logger.warning("Cookies are missing; downloads might fail.")
             return None
         self.warned = False
-        return random.choice(cookies)
+        chosen = random.choice(cookies)
+        logger.info(f"Using cookie file: {chosen} (size: {os.path.getsize(chosen)} bytes)")
+        return chosen
 
     async def save_cookies(self, urls: list[str]) -> None:
         logger.info("Saving cookies from urls...")
