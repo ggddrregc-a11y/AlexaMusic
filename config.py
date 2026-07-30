@@ -42,10 +42,16 @@ class Config:
         self.START_IMG = getenv("START_IMG", "https://files.catbox.moe/zvziwk.jpg")
 
     def check(self):
-        missing = [
-            var
-            for var in ["API_ID", "API_HASH", "BOT_TOKEN", "MONGO_URL", "LOGGER_ID", "OWNER_ID", "SESSION1"]
-            if not getattr(self, var)
-        ]
+        missing = []
+        # Check string variables
+        for var in ["API_HASH", "BOT_TOKEN", "MONGO_URL", "SESSION1"]:
+            val = getattr(self, var)
+            if not val or str(val).strip() == "":
+                missing.append(var)
+        # Check integer variables separately (0 is invalid, any non-zero is valid)
+        for var in ["API_ID", "LOGGER_ID", "OWNER_ID"]:
+            val = getattr(self, var)
+            if val == 0:
+                missing.append(var)
         if missing:
             raise SystemExit(f"Missing required environment variables: {', '.join(missing)}")
