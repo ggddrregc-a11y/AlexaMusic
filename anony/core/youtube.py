@@ -138,16 +138,27 @@ class YouTube:
             },
         }
 
+        # po_token provider (bgutil) runs on port 4416 - fixes YouTube bot detection on datacenters
+        pot_opts = {
+            **base_opts,
+            "extractor_args": {
+                "youtube": {
+                    "player_client": ["web"],
+                    "po_token": ["web+http://localhost:4416/get_po_token?videoId=dQw4w9WgXcQ"],
+                }
+            },
+        }
+
         # Try multiple strategies to bypass YouTube restrictions
         strategies = [
-            # Strategy 1: Android client
+            # Strategy 1: PO token via bgutil (best for datacenter IPs)
+            pot_opts,
+            # Strategy 2: Android client (no po_token needed)
             {**base_opts, "extractor_args": {"youtube": {"player_client": ["android"]}}},
-            # Strategy 2: iOS client
+            # Strategy 3: iOS client
             {**base_opts, "extractor_args": {"youtube": {"player_client": ["ios"]}}},
-            # Strategy 3: tv_embedded client
+            # Strategy 4: tv_embedded
             {**base_opts, "extractor_args": {"youtube": {"player_client": ["tv_embedded"]}}},
-            # Strategy 4: Invidious instance as source
-            {**base_opts, "extractor_args": {"youtube": {"player_client": ["web"]}}},
         ]
 
         if video:
