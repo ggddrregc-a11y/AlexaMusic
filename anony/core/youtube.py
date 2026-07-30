@@ -36,17 +36,19 @@ class YouTube:
         )
 
     def get_cookies(self):
-        if not self.checked:
-            for file in os.listdir(self.cookie_dir):
-                if file.endswith(".txt"):
-                    self.cookies.append(f"{self.cookie_dir}/{file}")
-            self.checked = True
-        if not self.cookies:
+        # Always scan the directory so cookies saved after startup are found
+        cookies = [
+            f"{self.cookie_dir}/{f}"
+            for f in os.listdir(self.cookie_dir)
+            if f.endswith(".txt")
+        ]
+        if not cookies:
             if not self.warned:
                 self.warned = True
                 logger.warning("Cookies are missing; downloads might fail.")
             return None
-        return random.choice(self.cookies)
+        self.warned = False
+        return random.choice(cookies)
 
     async def save_cookies(self, urls: list[str]) -> None:
         logger.info("Saving cookies from urls...")
@@ -132,39 +134,43 @@ class YouTube:
                 "User-Agent": "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36",
                 "Accept-Language": "en-US,en;q=0.9",
             },
-            "extractor_args": {
-                "youtube": {
-                    "player_client": ["android", "web"],
-                }
-            },
         }
 
+        # Try multiple strategies to bypass YouTube restrictions
+        strategies = [
+            # Strategy 1: Android client
+            {**base_opts, "extractor_args": {"youtube": {"player_client": ["android"]}}},
+            # Strategy 2: iOS client
+            {**base_opts, "extractor_args": {"youtube": {"player_client": ["ios"]}}},
+            # Strategy 3: tv_embedded client
+            {**base_opts, "extractor_args": {"youtube": {"player_client": ["tv_embedded"]}}},
+            # Strategy 4: Invidious instance as source
+            {**base_opts, "extractor_args": {"youtube": {"player_client": ["web"]}}},
+        ]
+
         if video:
-            ydl_opts = {
-                **base_opts,
-                "format": "(bestvideo[height<=?720][width<=?1280][ext=mp4])+(bestaudio)",
+            fmt_opts = {
+                "format": "(bestvideo[height<=?720][width<=?1280][ext=mp4])+(bestaudio[ext=m4a])/best[ext=mp4]/best",
                 "merge_output_format": "mp4",
             }
         else:
-            ydl_opts = {
-                **base_opts,
-                "format": "bestaudio/best",
-                "extractor_args": {
-                    "youtube": {
-                        "player_client": ["web", "android"],
-                    }
-                },
+            fmt_opts = {
+                "format": "bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio/best",
             }
 
-        def _download():
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        def _try_download(opts):
+            full_opts = {**opts, **fmt_opts}
+            with yt_dlp.YoutubeDL(full_opts) as ydl:
                 try:
                     ydl.download([url])
-                except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError):
+                    return filename if Path(filename).exists() else None
+                except Exception:
                     return None
-                except Exception as ex:
-                    logger.warning("Download failed: %s", ex)
-                    return None
-            return filename
 
-        return await asyncio.to_thread(_download)
+        for strategy in strategies:
+            result = await asyncio.to_thread(_try_download, strategy)
+            if result:
+                return result
+
+        logger.warning(f"All download strategies failed for {video_id}")
+        return None
