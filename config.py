@@ -44,7 +44,7 @@ class Config:
     def check(self):
         missing = []
         # Check string variables
-        for var in ["API_HASH", "BOT_TOKEN", "MONGO_URL", "SESSION1"]:
+        for var in ["API_HASH", "BOT_TOKEN", "SESSION1"]:
             val = getattr(self, var)
             if not val or str(val).strip() == "":
                 missing.append(var)
