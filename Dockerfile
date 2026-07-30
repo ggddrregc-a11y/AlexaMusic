@@ -17,7 +17,7 @@ ENV PATH="/root/.local/bin:${PATH}"
 
 COPY pyproject.toml uv.lock ./
 
-RUN uv sync --frozen
+RUN uv lock --upgrade-package dnspython && uv sync --frozen
 
 COPY . .
 
