@@ -144,14 +144,16 @@ class YouTube:
             "extractor_args": {
                 "youtube": {
                     "player_client": ["web"],
-                    "po_token": ["web+http://localhost:4416/get_po_token?videoId=dQw4w9WgXcQ"],
-                }
+                },
+                "youtubepot-bgutilhttp": {
+                    "base_url": ["http://127.0.0.1:4416"],
+                },
             },
         }
 
         # Try multiple strategies to bypass YouTube restrictions
         strategies = [
-            # Strategy 1: PO token via bgutil (best for datacenter IPs)
+            # Strategy 1: PO token via bgutil HTTP server (best for datacenter IPs)
             pot_opts,
             # Strategy 2: Android client (no po_token needed)
             {**base_opts, "extractor_args": {"youtube": {"player_client": ["android"]}}},

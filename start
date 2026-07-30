@@ -1,5 +1,7 @@
 #!/bin/bash
-# Start bgutil PO token provider in background (fixes YouTube bot detection)
-deno run -A jsr:@imputnet/bgutil-ytdlp-pot-provider/server &
+# Start bgutil PO token HTTP server in background (fixes YouTube bot detection on datacenter IPs)
+cd /app/bgutil-ytdlp-pot-provider/server
+deno run --allow-env --allow-net --allow-ffi=. --allow-read=. ../src/main.ts &
+cd /app
 sleep 3
 uv run python3 -m anony
